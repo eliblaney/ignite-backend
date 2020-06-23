@@ -8,16 +8,6 @@ class IgniteConstants {
 	// For app receiving reflection data
 	const SECRET_TOKEN = "IGNITE_API_KEY";
 	
-	// Seconds before session will timeout
-	const SESSION_TIMEOUT = 3600;
-	
-	// Okta details for admin dashboard
-	const OKTA_CLIENT_ID = "OKTA_CLIENT_ID";
-	const OKTA_CLIENT_SECRET = "OKTA_CLIENT_SECRET";
-	const OKTA_ISSUER = "OKTA_ISSUER";
-	const OKTA_AUDIENCE = "api://default";
-	const OKTA_CALLBACK = IgniteConstants::API_LINK . "/auth/callback.php";
-	
 	// MySQL details for tables "admin_users" and "days"
 	const MYSQL_HOST = "MYSQL_HOST";
 	const MYSQL_DB = "MYSQL_DB";
@@ -26,8 +16,19 @@ class IgniteConstants {
 
 	// Dashboard settings
 	
+	// Okta details for admin dashboard login
+	const OKTA_CLIENT_ID = "OKTA_CLIENT_ID";
+	const OKTA_CLIENT_SECRET = "OKTA_CLIENT_SECRET";
+	const OKTA_ISSUER = "OKTA_ISSUER";
+	const OKTA_AUDIENCE = "api://default";
+	const OKTA_CALLBACK = IgniteConstants::API_LINK . "/auth/callback.php";
+	
+	// Seconds before session will timeout
+	const SESSION_TIMEOUT = 3600;
+	
 	// Maximum number of user notifications to show in menu
 	const NOTIFICATIONS_MAX = 10;
+	
 	// Maximum number of user notifications to show on the Notifications page
 	const NOTIFICATIONS_PAGE_MAX = 10;
 	
