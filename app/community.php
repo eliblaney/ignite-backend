@@ -282,7 +282,7 @@ if($action === "join") {
 		// members should be [user1uid, user2uid, user3uid, ...]
 		$members = json_decode($row['members']);
 		// if group leader already set start date, we need that
-		$startedAt = json_decode($row['startedAt']);
+		$startedAt = $row['startedAt'];
 
 		// add new user
 		$members[] = $userid;
