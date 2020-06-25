@@ -36,10 +36,10 @@ $action = $_POST["action"];
 // chat(id, user, msg)	-- (disabled) submit chat message `msg` from `user` to community `id`
  * delete(id)*			-- delete community `id`, only owner can do this
  * remove(id, user)*	-- remove `user` from community `id`, only owner should be able to do this
- *
- *   * can only be called before the community ignites with ignite(id)
+ *                         * can only be called before the community ignites with ignite(id)
  */
-if($action !== 'geti' && $action !== 'getj' && $action !== 'init' && $action !== 'ignite' && $action !== 'join' /* && $action !== 'chat' */ && $action !== 'delete' && $action !== 'remove') {
+$valid_actions = array('geti', 'getj', 'init', 'ignite', 'join', 'delete', 'remove');
+if(!in_array($action, $valid_actions)) {
 	// ERROR 34: INVALID ACTION
 	IgniteHelper::error(34, "Invalid action");
 	exit;
@@ -227,6 +227,9 @@ if($action === "ignite") {
 			$success = mysqli_query($conn, $sql) && $success;
 		}
 
+		$sql = "UPDATE communities SET startedAt='$start' WHERE id='$id'";
+		$success = mysqli_query($conn, $sql) && $success;
+
 		$row['success'] = $success;
 
 		IgniteHelper::db_close($conn);
@@ -271,13 +274,15 @@ if($action === "join") {
 		exit;
 	}
 
-	$sql = "SELECT members FROM communities WHERE id='$id'";
+	$sql = "SELECT members, startedAt FROM communities WHERE id='$id'";
 	$result = mysqli_query($conn, $sql);
 	if(mysqli_num_rows($result) > 0) {
 		$row = mysqli_fetch_assoc($result);
 
 		// members should be [user1uid, user2uid, user3uid, ...]
 		$members = json_decode($row['members']);
+		// if group leader already set start date, we need that
+		$startedAt = json_decode($row['startedAt']);
 
 		// add new user
 		$members[] = $userid;
@@ -288,12 +293,13 @@ if($action === "join") {
 		$success = mysqli_query($conn, $sql);
 
 		$user_id = $user['id'];
-		$sql = "UPDATE users SET community='$id' WHERE id='$user_id'";
+		$sql = "UPDATE users SET community='$id', startedAt='$startedAt' WHERE id='$user_id'";
 		$success = mysqli_query($conn, $sql) && $success;
 
 		if($success) {
 			$row['success'] = '1';
 			$row['members'] = json_encode($members);
+			$row['startedAt'] = json_encode($startedAt);
 			IgniteHelper::db_close($conn);
 			header('Content-Type: application/json;charset=utf-8');
 			die(json_encode($row));
