@@ -36,10 +36,10 @@ $action = $_POST["action"];
 // chat(id, user, msg)	-- (disabled) submit chat message `msg` from `user` to community `id`
  * delete(id)*			-- delete community `id`, only owner can do this
  * remove(id, user)*	-- remove `user` from community `id`, only owner should be able to do this
- *
- *   * can only be called before the community ignites with ignite(id)
+ *                         * can only be called before the community ignites with ignite(id)
  */
-if($action !== 'geti' && $action !== 'getj' && $action !== 'init' && $action !== 'ignite' && $action !== 'join' /* && $action !== 'chat' */ && $action !== 'delete' && $action !== 'remove') {
+$valid_actions = array('geti', 'getj', 'init', 'ignite', 'join', 'delete', 'remove');
+if(!in_array($action, $valid_actions)) {
 	// ERROR 34: INVALID ACTION
 	IgniteHelper::error(34, "Invalid action");
 	exit;
