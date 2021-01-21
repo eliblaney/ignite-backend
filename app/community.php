@@ -114,7 +114,7 @@ if($action === "getp") {
 
 	$conn = IgniteHelper::db_connect();
 	// Retrieve public communities that have at least one member, aka the ones you can join
-	$sql = "SELECT * FROM communities WHERE public='1' AND JSON_LENGTH(members) > 0 AND JSON_LENGTH(members) < 10";
+	$sql = "SELECT * FROM communities WHERE public='1' AND JSON_LENGTH(members) > 0 AND JSON_LENGTH(members) < " . IgniteConstants::MAX_COMMUNITY_MEMBERS;
 	$result = mysqli_query($conn, $sql);
 	if(mysqli_num_rows($result) > 0) {
 		while($row = mysqli_fetch_assoc($result)) {
