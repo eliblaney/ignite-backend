@@ -35,8 +35,9 @@ $action = $_POST['action'];
  * delp(id)							-- delete post `id`
  * word(uid, word)					-- set user `uid` to have word `word`
  * susc(uid, data)					-- set binary suscipe `data` for user `uid`
+ * exit(uid) 							-- leave current community
  */
-if($action !== 'geti' && $action !== 'getu' && $action !== 'post' && $action !== 'read' && $action !== 'delp' && $action !== 'word' && $action !== 'susc') {
+if($action !== 'geti' && $action !== 'getu' && $action !== 'post' && $action !== 'read' && $action !== 'delp' && $action !== 'word' && $action !== 'susc' && $action !== 'exit') {
 	// ERROR 34: INVALID ACTION
 	IgniteHelper::error(34, 'Invalid action');
 	exit;
@@ -56,7 +57,7 @@ if($action === 'geti') {
 
 	$sql = "SELECT * FROM users WHERE id='$id'";
 	$result = mysqli_query($conn, $sql);
-	
+
 	if(mysqli_num_rows($result) > 0) {
 		while($row = mysqli_fetch_assoc($result)) {
 			$row['success'] = '1';
@@ -88,7 +89,7 @@ if($action === 'getu') {
 
 	$sql = "SELECT * FROM users WHERE uid='$id'";
 	$result = mysqli_query($conn, $sql);
-	
+
 	if(mysqli_num_rows($result) > 0) {
 		while($row = mysqli_fetch_assoc($result)) {
 			$row['success'] = '1';
@@ -150,7 +151,7 @@ if($action === 'post') {
 
 	$sql = "SELECT community FROM users WHERE uid='$uid'";
 	$result = mysqli_query($conn, $sql);
-	
+
 	$community = false;
 	if(mysqli_num_rows($result) > 0) {
 		$row = mysqli_fetch_assoc($result);
@@ -263,7 +264,7 @@ if($action === 'read') {
 
 	$sql = "SELECT community FROM users WHERE uid='$uid'";
 	$result = mysqli_query($conn, $sql);
-	
+
 	$community = false;
 	if(mysqli_num_rows($result) > 0) {
 		$row = mysqli_fetch_assoc($result);
@@ -286,7 +287,7 @@ if($action === 'read') {
 	// SQL UNION statements automatically filter to get distinct values
 	$sql = "SELECT id, user, date, day, privacy, community, data, ($day-day) AS distance FROM posts WHERE user='$uid' UNION SELECT id, user, date, day, privacy, community, data, ($day-day) AS distance FROM posts WHERE privacy>='2' UNION SELECT id, user, date, day, privacy, community, data, ($day-day) AS distance FROM posts WHERE privacy>='1' AND community='$community' ORDER BY distance ASC LIMIT $offset,$itemsperpage";
 	$result = mysqli_query($conn, $sql);
-	
+
 	if(mysqli_num_rows($result) > 0) {
 		$object = new stdClass();
 		$object->success = '1';
@@ -358,7 +359,7 @@ if($action === 'word') {
 
 	$sql = "SELECT word FROM users WHERE uid='$uid'";
 	$result = mysqli_query($conn, $sql);
-	
+
 	if(mysqli_num_rows($result) < 1) {
 		// ERROR 38: NO USER FOUND
 		IgniteHelper::db_close($conn);
@@ -378,7 +379,55 @@ if($action === 'word') {
 	die(json_encode($object));
 	exit;
 }
-	
+
+if($action === 'exit') {
+
+	$err = 0;
+
+	if(empty($_POST['uid'])) {
+		$err = $err | 2;
+	}
+
+	if($err > 0) {
+		// ERROR 2: MISSING ARGUMENTS
+		IgniteHelper::error($err, 'Missing arguments.');
+		exit;
+	}
+
+	$uid = addslashes(htmlspecialchars($_POST['uid']));
+	$conn = IgniteHelper::db_connect();
+	$success = true;
+
+
+	// Remove from members list of all participating communities
+	$communities = [];
+	$sql = "SELECT name, id, members FROM communities WHERE members LIKE '%$uid%'";
+	$result = mysqli_query($conn, $sql);
+	if(mysqli_num_rows($result) > 0) {
+		while($row = mysqli_fetch_assoc($result)) {
+			$communities[] = $row;
+		}
+	}
+	foreach($communities as $c) {
+		$members = json_decode($c['members'], true);
+		$members = json_encode(array_values(array_diff($members, array($uid))));
+
+		$id = $c['id'];
+		$sql = "UPDATE communities SET members='$members' WHERE id='$id'";
+		$result = mysqli_query($conn, $sql);
+		$success = $success && $result;
+	}
+
+	// Set community to NULL
+	$sql = "UPDATE users SET community=NULL WHERE uid='$uid'";
+	$result = mysqli_query($conn, $sql);
+	$success = $success && $result;
+
+	IgniteHelper::db_close($conn);
+	header('Content-Type: application/json;charset=utf-8');
+	die(json_encode(['success' => $success ? '1':'0']));
+	exit;
+}
 
 // ERROR 999: UNKNOWN ERROR
 IgniteHelper::error(999, 'Unknown error');
