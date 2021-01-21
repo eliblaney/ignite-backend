@@ -243,6 +243,18 @@ if($action === "ignite") {
 		// members should be [user1uid, user2uid, user3uid, ...]
 		$members = json_decode($row['members'], true);
 
+		if(sizeof($members) < IgniteConstants::MIN_COMMUNITY_MEMBERS) {
+			// ERROR 41: NOT ENOUGH MEMBERS
+			IgniteHelper::error(41, "Not enough members");
+			exit;
+		}
+
+		if(sizeof($members) > IgniteConstants::MAX_COMMUNITY_MEMBERS) {
+			// ERROR 43: COMMUNITY IS TOO LARGE
+			IgniteHelper::error(43, "Community is too large");
+			exit;
+		}
+
 		$success = true;
 		foreach($members as $m) {
 			// $m == user uid
@@ -310,7 +322,15 @@ if($action === "join") {
 
 		$cname = $row['name'];
 		// members should be [user1uid, user2uid, user3uid, ...]
+
 		$members = json_decode($row['members'], true);
+
+		if(count($members) >= IgniteConstants::MAX_COMMUNITY_MEMBERS) {
+			// ERROR 42: COMMUNITY IS FULL
+			IgniteHelper::error(42, "Community is full");
+			exit;
+		}
+
 		// if group leader already set start date, we need that
 		$startedAt = $row['startedAt'];
 		$hasStarted = !!$startedAt && strlen($startedAt) > 0 && strcmp($startedAt, "null");
@@ -339,6 +359,7 @@ if($action === "join") {
 		if($success) {
 			$row['success'] = '1';
 			$row['members'] = json_encode(array_values($members));
+			$row['id'] = $id;
 			$row['startedAt'] = json_encode($startedAt);
 
 			// Send community leader email

@@ -13,7 +13,11 @@ class IgniteConstants {
 	const MYSQL_DB = "MYSQL_DB";
 	const MYSQL_USER = "MYSQL_USER";
 	const MYSQL_PASS = "MYSQL_PASS";
-
+	
+	// Minimum and maximum number of users allowed in a community
+	const MIN_COMMUNITY_MEMBERS = 4;
+	const MAX_COMMUNITY_MEMBERS = 10;
+ 
 	// Dashboard settings
 	
 	// Okta details for admin dashboard login
