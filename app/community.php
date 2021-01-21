@@ -30,6 +30,7 @@ $action = $_POST["action"];
 /* Available actions:
  * geti(id)				-- get community from `id`
  * getj(joincode)		-- get community from `joincode`
+ * getp()				-- get a list of public communities
  * init(name, user)*	-- create community named `name` with unique joincode with owner `user`
  * ignite(id, start)*	-- set retreat start date for community `id`
  * join(id, user)*		-- add `user` to community `id`, and sets the community column for `user`
@@ -38,7 +39,7 @@ $action = $_POST["action"];
  * remove(id, user)*	-- remove `user` from community `id`, only owner should be able to do this
  *                         * can only be called before the community ignites with ignite(id)
  */
-$valid_actions = array('geti', 'getj', 'init', 'ignite', 'join', 'delete', 'remove');
+$valid_actions = array('geti', 'getj', 'getp', 'init', 'ignite', 'join', 'delete', 'remove');
 if(!in_array($action, $valid_actions)) {
 	// ERROR 34: INVALID ACTION
 	IgniteHelper::error(34, "Invalid action");
@@ -59,7 +60,7 @@ if($action === "geti") {
 
 	$sql = "SELECT * FROM communities WHERE id='$id'";
 	$result = mysqli_query($conn, $sql);
-	
+
 	if(mysqli_num_rows($result) > 0) {
 		while($row = mysqli_fetch_assoc($result)) {
 			$row['success'] = '1';
@@ -82,12 +83,12 @@ if($action === "getj") {
 	if(empty($_POST["joincode"])) {
 		IgniteHelper::error(2, "Missing arguments.");
 		exit;
-	}	
+	}
 
 	$joinCode = addslashes(htmlspecialchars($_POST["joincode"]));
 
 	$conn = IgniteHelper::db_connect();
-	
+
 	$sql = "SELECT * FROM communities WHERE joincode='$joinCode'";
 	$result = mysqli_query($conn, $sql);
 	if(mysqli_num_rows($result) > 0) {
@@ -107,9 +108,31 @@ if($action === "getj") {
 	exit;
 } // getj
 
+if($action === "getp") {
+
+	$communities = [];
+
+	$conn = IgniteHelper::db_connect();
+	// Retrieve public communities that have at least one member, aka the ones you can join
+	$sql = "SELECT * FROM communities WHERE public='1' AND JSON_LENGTH(members) > 0";
+	$result = mysqli_query($conn, $sql);
+	if(mysqli_num_rows($result) > 0) {
+		while($row = mysqli_fetch_assoc($result)) {
+			$communities[] = $row;
+		}
+	}
+
+	IgniteHelper::db_close($conn);
+	header('Content-Type: application/json;charset=utf-8');
+	$result = ['success' => '1', 'num' => count($communities), 'communities' => $communities];
+	die(json_encode($result));
+	exit;
+
+} // getp
+
 if($action === "init") {
 
-	if(empty($_POST["name"])) {
+	if(empty($_POST["name"]) || strlen($_POST["name"]) < 2) {
 		$err = $err | 2;
 	}
 
@@ -122,10 +145,13 @@ if($action === "init") {
 		// if errors 3, 5, or 7 show up here then that's really weird
 		IgniteHelper::error($err, "Missing arguments.");
 		exit;
-	}	
+	}
 
 	$name = addslashes(htmlspecialchars($_POST["name"]));
 	$uid = addslashes(htmlspecialchars($_POST["user"]));
+
+	$isPublic = !strcmp($name[0], 'P');
+	$name = substr($name, 1);
 
 	$conn = IgniteHelper::db_connect();
 
@@ -140,7 +166,7 @@ if($action === "init") {
 	$members = json_encode(array($uid));
 	$joincode = IgniteHelper::uniqueJoinCode($conn);
 
-	$sql = "INSERT INTO communities (name, members, createdAt, joincode) VALUES ('$name', '$members', '". str_replace('+00:00', 'Z', gmdate('c')) ."', '$joincode')";
+	$sql = "INSERT INTO communities (name, members, createdAt, public, joincode) VALUES ('$name', '$members', '". str_replace('+00:00', 'Z', gmdate('c')) ."', '$isPublic', '$joincode')";
 	$result = mysqli_query($conn, $sql);
 	if($result) {
 		$sql = "SELECT id FROM communities WHERE joincode='$joincode'";
@@ -152,7 +178,7 @@ if($action === "init") {
 				$sql = "UPDATE users SET community='$id' WHERE id='$user_id'";
 				$success = mysqli_query($conn, $sql);
 				$row['success'] = $success ? '1' : '0';
-				
+
 				IgniteHelper::db_close($conn);
 				header('Content-Type: application/json;charset=utf-8');
 				die(json_encode($row));
@@ -220,7 +246,7 @@ if($action === "ignite") {
 		$success = true;
 		foreach($members as $m) {
 			// $m == user uid
-			$u = IgniteHelper::getAppUser($conn, $m);	
+			$u = IgniteHelper::getAppUser($conn, $m);
 			$u_id = $u['id'];
 
 			$sql = "UPDATE users SET startedAt='$start' WHERE id='$u_id'";
@@ -259,7 +285,7 @@ if($action === "join") {
 		// if errors 3, 5, or 7 show up here then that's really weird
 		IgniteHelper::error($err, "Missing arguments.");
 		exit;
-	}	
+	}
 
 	$conn = IgniteHelper::db_connect();
 
@@ -364,7 +390,7 @@ if($action === "remove") {
 		// if errors 3, 5, or 7 show up here then that's really weird
 		IgniteHelper::error($err, "Missing arguments.");
 		exit;
-	}	
+	}
 
 	$conn = IgniteHelper::db_connect();
 

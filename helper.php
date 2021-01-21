@@ -19,15 +19,15 @@ class IgniteHelper {
 			exit;
 		}
 	}
-	
+
 	static function db_connect() {
 		return mysqli_connect(IgniteConstants::MYSQL_HOST, IgniteConstants::MYSQL_USER, IgniteConstants::MYSQL_PASS, IgniteConstants::MYSQL_DB);
 	}
-	
+
 	static function db_close($conn) {
 		return mysqli_close($conn);
 	}
-	
+
 	static function getAppUser($conn, $userid) {
 		$userid = addslashes(htmlspecialchars($userid));
 		$sql = "SELECT * FROM `users` WHERE uid='$userid'";
@@ -41,16 +41,18 @@ class IgniteHelper {
 			return false;
 		}
 	}
-	
-	static function uniqueJoinCode($conn) {
+
+	static function uniqueJoinCode($conn, $isPublic) {
 		$isDuplicate = true;
 		$joincode = "";
+		$codeLength = 6;
 		do {
-			$joincode = substr(md5(microtime()), rand(0, 26), 6);
+			$joincode = substr(md5(microtime()), rand(0, 26), $codeLength);
 			$sql = "SELECT id FROM communities WHERE joincode='$joincode'";
 			$isDuplicate = mysqli_num_rows(mysqli_query($conn, $sql)) > 0;
 		} while($isDuplicate);
-		return $joincode;
+
+		return $prefix . $joincode;
 	}
 
 	static function getUser($conn, $userid) {
@@ -65,7 +67,7 @@ class IgniteHelper {
 			return false;
 		}
 	}
-	
+
 	static function getUserById($conn, $id) {
 		$sql = "SELECT email, firstname, lastname FROM `admin_users` WHERE id='$id'";
 		$result = mysqli_query($conn, $sql);
@@ -77,24 +79,24 @@ class IgniteHelper {
 			return false;
 		}
 	}
-	
+
 	static function hasPermission($permissions, $p) {
 		if(isset($permissions->op) && $permissions->op && strcmp($permissions->op, "false")) return true;
 		return (isset($permissions->$p) && $permissions->$p && strcmp($permissions->$p, "false"));
 	}
-	
+
 	static function session() {
 		session_start();
-		
+
 		if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY'] > IgniteConstants::SESSION_TIMEOUT)) {
 			// last request was more than 1 hour ago
-			session_unset();     // unset $_SESSION variable for the run-time 
+			session_unset();     // unset $_SESSION variable for the run-time
 			session_destroy();   // destroy session data in storage
 			header('Location: https://eliblaney.com/ignite/api/' . IgniteConstants::API_VERSION . '/auth/');
 		}
 		IgniteHelper::refresh_session();
 	}
-	
+
 	static function refresh_session() {
 		$_SESSION['LAST_ACTIVITY'] = time(); // update last activity time stamp
 		if (!isset($_SESSION['CREATED'])) {
@@ -105,11 +107,11 @@ class IgniteHelper {
 			$_SESSION['CREATED'] = time();  // update creation time
 		}
 	}
-	
+
 	static function logincheck() {
 		if(!isset($_SESSION['login']) || $_SESSION['login'] == false) {
 			if(isset($_SESSION['login'])) {
-				session_unset();     // unset $_SESSION variable for the run-time 
+				session_unset();     // unset $_SESSION variable for the run-time
 				session_destroy();   // destroy session data in storage
 			}
 			header('Location: https://eliblaney.com/ignite/api/' . IgniteConstants::API_VERSION . '/auth/');
@@ -117,11 +119,11 @@ class IgniteHelper {
 			exit;
 		}
 	}
-	
+
 	static function getNotifications($conn) {
 		return IgniteHelper::getNotificationsFor($conn, $_SESSION['id']);
 	}
-	
+
 	static function getNotificationsFor($conn, $user) {
 		$sql = "SELECT `notifications` FROM `admin_users` WHERE `id`='" . $user ."'";
 		$result = mysqli_query($conn, $sql);
@@ -135,11 +137,11 @@ class IgniteHelper {
 			return false;
 		}
 	}
-	
+
 	static function getSettings($conn) {
 		return IgniteHelper::getSettingsFor($conn, $_SESSION['id']);
 	}
-	
+
 	static function getSettingsFor($conn, $user) {
 		$sql = "SELECT `settings` FROM `admin_users` WHERE `id`='" . $user ."'";
 		$result = mysqli_query($conn, $sql);
@@ -153,38 +155,38 @@ class IgniteHelper {
 			return false;
 		}
 	}
-	
+
 	static function setSetting($conn, $setting_num, $value) {
 		return IgniteHelper::setSettingFor($conn, $_SESSION['id'], $setting_num, $value);
 	}
-	
+
 	static function setSettingFor($conn, $user, $setting_num, $value) {
 		$settings = IgniteHelper::getSettingsFor($conn, $user);
-		
+
 		$settings[$setting_num] = $value;
-		
+
 		$sql = "UPDATE admin_users SET settings='" . addslashes(json_encode($settings)) . "' WHERE id=" . $user;
 		mysqli_query($conn, $sql);
 		return $sql;
 	}
-	
+
 	static function setNotifications($conn, $notifications) {
 		return IgniteHelper::setNotificationsFor($conn, $_SESSION['id'], $notifications);
 	}
-	
+
 	static function setNotificationsFor($conn, $user, $notifications) {
 		$sql = "UPDATE admin_users SET notifications='" . addslashes(json_encode($notifications)) . "' WHERE id=" . $user;
 		mysqli_query($conn, $sql);
 		return $sql;
 	}
-	
+
 	static function sendNotification($conn, $user, $subject, $link, $classes) {
 		$notifications = IgniteHelper::getNotificationsFor($conn, $user);
 		$time = time();
 		array_push($notifications, json_decode('{"unread":"true","subject":"'. $subject .'","timestamp":"'. $time. '","link":"'. $link .'","classes":"'. $classes .'"}'));
 		return IgniteHelper::setNotificationsFor($conn, $user, $notifications);
 	}
-	
+
 	static function getUsers($conn) {
 		$sql = "SELECT id, email, firstname, lastname, permissions FROM `admin_users` WHERE 1";
 		$result = mysqli_query($conn, $sql);
@@ -198,7 +200,7 @@ class IgniteHelper {
 			return false;
 		}
 	}
-	
+
 	static function getDayAny($conn, $day, $lang, $religion, $flag) {
 		$d = IgniteHelper::getDay($conn, $day, $lang, $faith, $flags);
 		if(!$d) $d = IgniteHelper::getDay($conn, $day, $lang, $faith, 0);
@@ -210,7 +212,7 @@ class IgniteHelper {
 		if(!$d) $d = IgniteHelper::getDay($conn, $day, "en", 0, 0);
 		return $d;
 	}
-	
+
 	static function getDay($conn, $day, $lang, $religion, $flag) {
 		$sql = "SELECT id, content FROM `days` WHERE day='$day' AND lang='$lang' AND religion='$religion' AND flag='$flag'";
 		$result = mysqli_query($conn, $sql);
@@ -222,7 +224,7 @@ class IgniteHelper {
 			return false;
 		}
 	}
-	
+
 	static function getDayById($conn, $id) {
 		$sql = "SELECT id, day FROM `days` WHERE id='$id'";
 		$result = mysqli_query($conn, $sql);
@@ -234,7 +236,7 @@ class IgniteHelper {
 			return false;
 		}
 	}
-	
+
 	static function setDay($conn, $day, $lang, $religion, $flags, $content) {
 		$sql = "";
 		$c = addslashes(htmlspecialchars($content));
@@ -243,19 +245,19 @@ class IgniteHelper {
 			// update
 			$id = $d->id;
 			$sql = "UPDATE days SET content='$c' WHERE id='$id'";
-			
+
 			$fullname = $_SESSION['firstname'] .' '. $_SESSION['lastname'];
 			IgniteHelper::logActivity($conn, "bg1", "edit", "$fullname edited Day $day.", "");
 		} else {
 			// insert
 			$sql = "INSERT INTO days (day, lang, religion, flag, content) VALUES('$day', '$lang', '$religion', '$flags', '$c')";
-			
+
 			$fullname = $_SESSION['firstname'] .' '. $_SESSION['lastname'];
 			IgniteHelper::logActivity($conn, "bg2", "fire", "$fullname created a new Day $day variation.", "");
 		}
 		return mysqli_query($conn, $sql);
 	}
-	
+
 	static function setAudio($conn, $day, $lang, $religion, $flags, $audio) {
 		$sql = "";
 		$a = htmlspecialchars($audio);
@@ -271,7 +273,7 @@ class IgniteHelper {
 		}
 		return mysqli_query($conn, $sql);
 	}
-	
+
 	static function getAudio($conn, $day, $lang, $religion, $flags, $any = false) {
 		$d = IgniteHelper::getDay($conn, $day, $lang, $religion, $flags);
 		if($any) {
@@ -293,7 +295,7 @@ class IgniteHelper {
 			return false;
 		}
 	}
-	
+
 	static function getData($conn, $key) {
 		$sql = "SELECT data FROM `admin_data` WHERE name='$key'";
 		$result = mysqli_query($conn, $sql);
@@ -305,13 +307,13 @@ class IgniteHelper {
 			return false;
 		}
 	}
-	
+
 	static function setData($conn, $key, $data) {
 		$sql = "UPDATE admin_data SET data='". addslashes(json_encode($data)) ."' WHERE name='". addslashes($key) ."'";
 		return mysqli_query($conn, $sql);
-		
+
 	}
-	
+
 	static function getAssignment($conn, $dayid) {
 		$assignments = IgniteHelper::getData($conn, "assignments");
 		$day = ''. $dayid;
@@ -320,7 +322,7 @@ class IgniteHelper {
 		}
 		return false;
 	}
-	
+
 	static function getAssignments($conn, $userid) {
 		$assignments = IgniteHelper::getData($conn, "assignments");
 		$days = array();
@@ -331,13 +333,13 @@ class IgniteHelper {
 		}
 		return $days;
 	}
-	
+
 	static function logActivity($conn, $bg, $icon, $subject, $action) {
 		$userid = $_SESSION['id'];
 		$sql = "INSERT INTO admin_history (userid, timestamp, classes, subject, action) VALUES('$userid', '". time() ."', '{\"bg\":\"$bg\",\"icon\":\"$icon\"}', '$subject', '$action')";
 		return mysqli_query($conn, $sql);
 	}
-	
+
 	static function getActivity($conn, $limit) {
 		$sql = "SELECT * FROM admin_history ORDER BY timestamp DESC LIMIT $limit";
 		$result = mysqli_query($conn, $sql);
@@ -351,7 +353,7 @@ class IgniteHelper {
 			return false;
 		}
 	}
-	
+
 	static function prettyDate($date) {
 		$current = time();
 		$datediff = $date - $current;
@@ -398,10 +400,10 @@ class IgniteHelper {
 		} else if($difference > 1) {
 			$t = "In the future";
 		}
-		
+
 		return $t;
 	}
-	
+
 }
 
 ?>
