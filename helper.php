@@ -404,6 +404,28 @@ class IgniteHelper {
 		return $t;
 	}
 
+	static function email($to, $name, $subject, $message, $html = true) {
+		$from = "Ignite<ignite@eliblaney.com>";
+		$headers = "";
+		if($html) {
+			$headers .= 'MIME-Version: 1.0' . "\r\n";
+			$headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
+		}
+		$headers .= 'From: '.$from."\r\n".
+					'Reply-To: '.$from."\r\n" .
+					'X-Mailer: PHP/' . phpversion();
+
+		if($html) {
+			$content .= "<!DOCTYPE html> <html> <head> <link rel='preconnect' href='https://fonts.gstatic.com'> <link href='https://fonts.googleapis.com/css2?family=Raleway:wght@100;400&display=swap' rel='stylesheet'> <style> body { font-family: Raleway, sans-serif; } #header { height: 100px; display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; padding-bottom: 10px; margin-bottom: 20px; border-bottom: 1px solid #888; } #ignite { font-weight: 100; color: #111; } #logo { height: 100px; width: auto; border-radius: 25px; margin-right: 30px; } #contents { color: #1a1a1a; } #greeting, #farewell { line-height: 3em; } #footer { border-top: 1px solid #888; padding-top: 10px; margin-top: 20px; text-align: center; color: #777; } a { color: #5bf; } </style> </head> \r\n <body> <div id='header'> <img id='logo' src='https://eliblaney.com/ignite/images/IgniteLogo.png' /> <h1 id='ignite'>Ignite</h1> </div> <div id='contents'> <p id='greeting'> Dear $name, </p> <div id='message'> <p>\r\n";
+			$content .= $message;
+			$content .= "\r\n</p> </div> <p id='farewell'> Sincerely, the Ignite Team. </p> </div> <div id='footer'> <p> Ignite &copy; 2021. All rights reserved. </p> <p> Created by Eli Blaney and Paul Martin. </p> </div> </body> </html>";
+		} else {
+			$content = $message;
+		}
+
+		return mail($to, $subject, $content, $headers);
+	}
+
 }
 
 ?>

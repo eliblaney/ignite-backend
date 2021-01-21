@@ -409,8 +409,8 @@ if($action === 'exit') {
 		}
 	}
 	foreach($communities as $c) {
-		$members = json_decode($c['members']);
-		$members = json_encode(array_diff($members, array($uid)));
+		$members = json_decode($c['members'], true);
+		$members = json_encode(array_values(array_diff($members, array($uid))));
 
 		$id = $c['id'];
 		$sql = "UPDATE communities SET members='$members' WHERE id='$id'";

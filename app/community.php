@@ -114,7 +114,7 @@ if($action === "getp") {
 
 	$conn = IgniteHelper::db_connect();
 	// Retrieve public communities that have at least one member, aka the ones you can join
-	$sql = "SELECT * FROM communities WHERE public='1' AND JSON_LENGTH(members) > 0";
+	$sql = "SELECT * FROM communities WHERE public='1' AND JSON_LENGTH(members) > 0 AND JSON_LENGTH(members) < 10";
 	$result = mysqli_query($conn, $sql);
 	if(mysqli_num_rows($result) > 0) {
 		while($row = mysqli_fetch_assoc($result)) {
@@ -241,7 +241,7 @@ if($action === "ignite") {
 		$row = mysqli_fetch_assoc($result);
 
 		// members should be [user1uid, user2uid, user3uid, ...]
-		$members = json_decode($row['members']);
+		$members = json_decode($row['members'], true);
 
 		$success = true;
 		foreach($members as $m) {
@@ -256,7 +256,7 @@ if($action === "ignite") {
 		$sql = "UPDATE communities SET startedAt='$start' WHERE id='$id'";
 		$success = mysqli_query($conn, $sql) && $success;
 
-		$row['success'] = $success;
+		$row['success'] = $success ? "1":"0";
 
 		IgniteHelper::db_close($conn);
 		header('Content-Type: application/json;charset=utf-8');
@@ -300,19 +300,33 @@ if($action === "join") {
 		exit;
 	}
 
-	$sql = "SELECT members, startedAt FROM communities WHERE id='$id'";
+	$uname = $user['name'];
+	$uemail = $user['email'];
+
+	$sql = "SELECT name, members, startedAt FROM communities WHERE id='$id'";
 	$result = mysqli_query($conn, $sql);
 	if(mysqli_num_rows($result) > 0) {
 		$row = mysqli_fetch_assoc($result);
 
+		$cname = $row['name'];
 		// members should be [user1uid, user2uid, user3uid, ...]
-		$members = json_decode($row['members']);
+		$members = json_decode($row['members'], true);
 		// if group leader already set start date, we need that
 		$startedAt = $row['startedAt'];
+		$hasStarted = !!$startedAt && strlen($startedAt) > 0 && strcmp($startedAt, "null");
+
+		// get current community members (for email later)
+		$member_users = [];
+		foreach($members as $m) {
+			$mu = IgniteHelper::getAppUser($conn, $m);
+			if($mu) {
+				$member_users[] = $mu;
+			}
+		}
 
 		// add new user
 		$members[] = $userid;
-		$json_members = json_encode($members);
+		$json_members = json_encode(array_values($members));
 
 		$sql = "UPDATE communities SET members='$json_members' WHERE id='$id'";
 
@@ -324,8 +338,27 @@ if($action === "join") {
 
 		if($success) {
 			$row['success'] = '1';
-			$row['members'] = json_encode($members);
+			$row['members'] = json_encode(array_values($members));
 			$row['startedAt'] = json_encode($startedAt);
+
+			// Send community leader email
+			IgniteHelper::email($member_users[0]['email'], $member_users[0]['name'], "$uname joined $cname!",
+				"$uname has joined your community. Say hello to them! You can reach them at $uemail.");
+
+			// Send user welcome email
+			$startedMessage = "Your group leader, ".$member_users[0]['name'].", hasn't set a start date for the retreat yet.";
+			if($hasStarted) {
+				$startDate = date('F j', strtotime($startedAt));
+				$startedMessage = "The retreat will be starting soon, on $startDate.";
+			}
+			$members_list = "";
+			foreach($member_users as $mu) {
+				$members_list .= '<li>'.$mu['name'].' ('.$mu['email'].')</li> ';
+			}
+			IgniteHelper::email($uemail, $uname, "Welcome to Ignite!",
+				"Congratulations on joining your first community, $cname! $startedMessage In the meantime, get to know some of the other group members:</p><ul>$members_list</ul><p>");
+
+			// Return app success info
 			IgniteHelper::db_close($conn);
 			header('Content-Type: application/json;charset=utf-8');
 			die(json_encode($row));
@@ -342,9 +375,6 @@ if($action === "join") {
 		IgniteHelper::error(35, "Could not find community.");
 		exit;
 	}
-
-	// should not reach this point, but just in case:
-	IgniteHelper::db_close($conn);
 
 } // join
 
@@ -411,7 +441,7 @@ if($action === "remove") {
 		$row = mysqli_fetch_assoc($result);
 
 		// members should be [user1uid, user2uid, user3uid, ...]
-		$members = json_decode($row['members']);
+		$members = json_decode($row['members'], true);
 
 		// remove user by creating new list without the user. this way, we avoid null indices
 		$newmembers = array();
@@ -422,7 +452,7 @@ if($action === "remove") {
 			$newmembers[] = $m;
 		}
 
-		$json_members = json_encode($newmembers);
+		$json_members = json_encode(array_values($newmembers));
 
 		$sql = "UPDATE communities SET members='$json_members' WHERE id='$id'";
 
@@ -434,7 +464,7 @@ if($action === "remove") {
 
 		if($success) {
 			$row['success'] = '1';
-			$row['members'] = json_encode($newmembers);
+			$row['members'] = json_encode(array_values($newmembers));
 			IgniteHelper::db_close($conn);
 			header('Content-Type: application/json;charset=utf-8');
 			die(json_encode($row));
