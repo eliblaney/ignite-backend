@@ -60,7 +60,8 @@ $json = [
 	'religion' => "$religion",
 	'flag' => "$flag",
 	'content' => $d->content,
-	'audio' => $audio 
+	'audio' => $audio,
+	'image' => $d->image
 ];
 
 header('Content-Type: application/json;charset=utf-8');

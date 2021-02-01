@@ -214,11 +214,11 @@ class IgniteHelper {
 	}
 
 	static function getDay($conn, $day, $lang, $religion, $flag) {
-		$sql = "SELECT id, content FROM `days` WHERE day='$day' AND lang='$lang' AND religion='$religion' AND flag='$flag'";
+		$sql = "SELECT id, content, image FROM `days` WHERE day='$day' AND lang='$lang' AND religion='$religion' AND flag='$flag'";
 		$result = mysqli_query($conn, $sql);
 		if (mysqli_num_rows($result) > 0) {
 			if($row = mysqli_fetch_assoc($result)) {
-				return json_decode('{"id":"'. $row['id'] .'","day":"'. $day .'","content":"'. str_replace(array("\r\n", "\n"), '\\n', $row['content']) .'"}');
+				return json_decode('{"id":"'. $row['id'] .'","day":"'. $day .'","content":"'. str_replace(array("\r\n", "\n"), '\\n', $row['content']) .'", "image":"'.$row['image'].'"}');
 			}
 		} else {
 			return false;
@@ -409,7 +409,7 @@ class IgniteHelper {
 		$headers = "";
 		if($html) {
 			$headers .= 'MIME-Version: 1.0' . "\r\n";
-			$headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
+			$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
 		}
 		$headers .= 'From: '.$from."\r\n".
 					'Reply-To: '.$from."\r\n" .

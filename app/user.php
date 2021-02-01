@@ -35,9 +35,10 @@ $action = $_POST['action'];
  * delp(id)							-- delete post `id`
  * word(uid, word)					-- set user `uid` to have word `word`
  * susc(uid, data)					-- set binary suscipe `data` for user `uid`
- * exit(uid) 							-- leave current community
+ * exit(uid) 						-- leave current community
+ * cont(uid, subject, message) 		-- send contact message
  */
-if($action !== 'geti' && $action !== 'getu' && $action !== 'post' && $action !== 'read' && $action !== 'delp' && $action !== 'word' && $action !== 'susc' && $action !== 'exit') {
+if($action !== 'geti' && $action !== 'getu' && $action !== 'post' && $action !== 'read' && $action !== 'delp' && $action !== 'word' && $action !== 'susc' && $action !== 'exit' && $action !== 'cont') {
 	// ERROR 34: INVALID ACTION
 	IgniteHelper::error(34, 'Invalid action');
 	exit;
@@ -422,6 +423,60 @@ if($action === 'exit') {
 	$sql = "UPDATE users SET community=NULL WHERE uid='$uid'";
 	$result = mysqli_query($conn, $sql);
 	$success = $success && $result;
+
+	IgniteHelper::db_close($conn);
+	header('Content-Type: application/json;charset=utf-8');
+	die(json_encode(['success' => $success ? '1':'0']));
+	exit;
+}
+
+if($action === 'cont') {
+
+	$err = 0;
+
+	if(empty($_POST['uid'])) {
+		$err = $err | 2;
+	}
+
+	if(empty($_POST['subject'])) {
+		$err = $err | 4;
+	}
+
+	if(empty($_POST['message'])) {
+		$err = $err | 8;
+	}
+
+	if($err > 0) {
+		// ERROR 2 ERROR 4 ERROR 6 ERROR 8: MISSING ARGUMENTS
+		IgniteHelper::error($err, 'Missing arguments.');
+		exit;
+	}
+
+	$uid = addslashes(htmlspecialchars($_POST['uid']));
+	$subject = addslashes(htmlspecialchars($_POST['subject']));
+	$message = str_replace("\n", "</p><p>", addslashes(htmlspecialchars($_POST['message'])));
+	$conn = IgniteHelper::db_connect();
+
+	$user = IgniteHelper::getAppUser($conn, $uid);
+
+	if(!$user) {
+		// ERROR 38: NO USER FOUND
+		IgniteHelper::error(38, "No user found");
+		exit;
+	}
+
+	$uname = $user['name'];
+	$uemail = $user['email'];
+
+	// TODO: Move to config
+	$admins = [
+		'Eli Blaney <eliblaney@gmail.com>',
+		'Paul Martin <ptm45786@creighton.edu>'
+	];
+
+	$success =IgniteHelper::email(implode(',', $admins), 'Ignite Team', "Ignite Message from ${uname}",
+		"${uname} has reached out to Ignite using the contact form in the app. Here are the details:</p><p><strong>From:</strong> ${uname}, <${uemail}></p><p><strong>Subject:</strong> ${subject}</p><p><strong>Message: </strong></p><p>${message}"
+	);
 
 	IgniteHelper::db_close($conn);
 	header('Content-Type: application/json;charset=utf-8');
