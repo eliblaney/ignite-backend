@@ -179,6 +179,12 @@ if($action === "init") {
 				$success = mysqli_query($conn, $sql);
 				$row['success'] = $success ? '1' : '0';
 
+				$uemail = htmlentities($user['email']);
+				$uname = htmlentities($user['name']);
+				$name = htmlentities($name);
+				IgniteHelper::email($uemail, $uname, "Welcome to Ignite!",
+					"Congratulations on creating your first community, $name! Because you started this community, you are the \"community leader.\" So what now?</p><ol><li><strong>Set a retreat start date.</strong> Chances are, you&#39;ll want to start the retreat on Ash Wednesday for the full experience.</li><li><strong>Invite your friends!</strong> You&#39;ll need at least 4 people to start Ignite, and a maximum of 10. You can invite people by sending them your join code: <strong>$joincode</strong>.</li><li><strong>Check out the Kindling.</strong> To get the most out of Ignite, you might want to look at the Kindling in the app to give you a better idea of what to expect as you enter into Ignite.</li></ol><p>We hope you enjoy Ignite!");
+
 				IgniteHelper::db_close($conn);
 				header('Content-Type: application/json;charset=utf-8');
 				die(json_encode($row));
@@ -377,7 +383,7 @@ if($action === "join") {
 				$members_list .= '<li>'.$mu['name'].' ('.$mu['email'].')</li> ';
 			}
 			IgniteHelper::email($uemail, $uname, "Welcome to Ignite!",
-				"Congratulations on joining your first community, $cname! $startedMessage In the meantime, get to know some of the other group members:</p><ul>$members_list</ul><p>");
+				"Congratulations on joining your first community, $cname! $startedMessage In the meantime, get to know some of the other group members:</p><ul>$members_list</ul><p>We also encourage you to check out the <strong>Kindling</strong> in the app, so that you can have a better idea of what to expect as you enter into Ignite. Have fun!");
 
 			// Return app success info
 			IgniteHelper::db_close($conn);

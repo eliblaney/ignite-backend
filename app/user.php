@@ -419,8 +419,8 @@ if($action === 'exit') {
 		$success = $success && $result;
 	}
 
-	// Set community to NULL
-	$sql = "UPDATE users SET community=NULL WHERE uid='$uid'";
+	// Set community and startedAt to NULL
+	$sql = "UPDATE users SET community=NULL, startedAt=NULL WHERE uid='$uid'";
 	$result = mysqli_query($conn, $sql);
 	$success = $success && $result;
 
