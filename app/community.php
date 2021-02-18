@@ -118,7 +118,10 @@ if($action === "getp") {
 	$result = mysqli_query($conn, $sql);
 	if(mysqli_num_rows($result) > 0) {
 		while($row = mysqli_fetch_assoc($result)) {
-			$communities[] = $row;
+			$startedAt = $row['startedAt'];
+			if(!$startedAt || strtotime($startedAt) > strtotime('now')) {
+				$communities[] = $row;
+			}
 		}
 	}
 
@@ -360,7 +363,7 @@ if($action === "join") {
 			$row['success'] = '1';
 			$row['members'] = json_encode(array_values($members));
 			$row['id'] = $id;
-			$row['startedAt'] = json_encode($startedAt);
+			$row['startedAt'] = $startedAt ? json_encode($startedAt) : null;
 
 			// Send community leader email
 			IgniteHelper::email($member_users[0]['email'], $member_users[0]['name'], "$uname joined $cname!",
