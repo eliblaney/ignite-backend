@@ -42,6 +42,49 @@ class IgniteHelper {
 		}
 	}
 
+	static function getActiveUsers($conn) {
+		return IgniteHelper::getUsers($conn, "WHERE community IS NOT NULL AND startedAt < CURDATE() AND DATE_ADD(startedAt, INTERVAL 51 DAY) >= CURDATE()");
+	}
+
+	static function getIsolatedUsers($conn) {
+		return IgniteHelper::getUsers($conn, "WHERE community IS NULL");
+	}
+
+	static function getUsers($conn, $qadd = "") {
+		$users = [];
+		$sql = "SELECT * FROM `users` ".$qadd;
+		$result = mysqli_query($conn, $sql);
+		if (mysqli_num_rows($result) > 0) {
+			while($row = mysqli_fetch_assoc($result)) {
+				if(strpos($row['email'], 'testing.com') === false ) {
+					$users[] = $row;
+				}
+			}
+		}
+		return $users;
+	}
+
+	static function getNumUsers($conn, $qadd = "") {
+		$sql = "SELECT COUNT(id) as num FROM `users` ".$qadd;
+		$result = mysqli_query($conn, $sql);
+		if (mysqli_num_rows($result) > 0) {
+			if($row = mysqli_fetch_assoc($result)) {
+				if(strpos($row['email'], 'testing.com') === false ) {
+					return $row['num'];
+				}
+			}
+		}
+		return 0;
+	}
+
+	static function getNumActiveUsers($conn) {
+		return IgniteHelper::getNumUsers($conn, "WHERE community IS NOT NULL AND startedAt < CURDATE() AND DATE_ADD(startedAt, INTERVAL 51 DAY) >= CURDATE()");
+	}
+
+	static function getNumIsolatedUsers($conn) {
+		return IgniteHelper::getNumUsers($conn, "WHERE community IS NULL");
+	}
+
 	static function uniqueJoinCode($conn, $isPublic) {
 		$isDuplicate = true;
 		$joincode = "";
@@ -61,7 +104,7 @@ class IgniteHelper {
 		if (mysqli_num_rows($result) > 0) {
 			// output data of each row
 			if($row = mysqli_fetch_assoc($result)) {
-				return json_decode('{"id":"'. $row['id'] .'","email":"'. $row['email'] .'","fname":"'. $row['firstname'] .'","lname":"'. $row['lastname'] .'","notifications":'. $row['notifications'] .',"permissions":'. $row['permissions'] .'}');
+				return $row;
 			}
 		} else {
 			return false;
@@ -73,7 +116,7 @@ class IgniteHelper {
 		$result = mysqli_query($conn, $sql);
 		if (mysqli_num_rows($result) > 0) {
 			if($row = mysqli_fetch_assoc($result)) {
-				return json_decode('{"email":"'. $row['email'] .'","firstname":"'. $row['firstname'] .'","lastname":"'. $row['lastname'] .'"}');
+				return $row;
 			}
 		} else {
 			return false;
@@ -185,20 +228,6 @@ class IgniteHelper {
 		$time = time();
 		array_push($notifications, json_decode('{"unread":"true","subject":"'. $subject .'","timestamp":"'. $time. '","link":"'. $link .'","classes":"'. $classes .'"}'));
 		return IgniteHelper::setNotificationsFor($conn, $user, $notifications);
-	}
-
-	static function getUsers($conn) {
-		$sql = "SELECT id, email, firstname, lastname, permissions FROM `admin_users` WHERE 1";
-		$result = mysqli_query($conn, $sql);
-		$users = [];
-		if (mysqli_num_rows($result) > 0) {
-			while($row = mysqli_fetch_assoc($result)) {
-				array_push($users, json_decode('{"id":"'. $row['id'] .'","email":"'. $row['email'] .'","firstname":"'. $row['firstname'] .'","lastname":"'. $row['lastname']  .'","permissions":'. $row['permissions'] .'}'));
-			}
-			return $users;
-		} else {
-			return false;
-		}
 	}
 
 	static function getDayAny($conn, $day, $lang, $religion, $flag) {

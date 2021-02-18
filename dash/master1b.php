@@ -26,6 +26,7 @@
                             <li <?php if($page == 1) { ?> class="active" <?php } ?>><a href="reflections.php"><i class="ti-write"></i><span>Reflections</span></a></li>
                             <li <?php if($page == 2) { ?> class="active" <?php } ?>><a href="audioguides.php"><i class="ti-headphone"></i><span>Audio Guides</span></a></li>
                             <li <?php if($page == 3) { ?> class="active" <?php } ?>><a href="assignments.php"><i class="ti-pencil"></i><span>Assignments</span></a></li>
+                            <li <?php if($page == 7) { ?> class="active" <?php } ?>><a href="blast.php"><i class="ti-email"></i><span>Mail Blast</span></a></li>
                             <li <?php if($page == 4) { ?> class="active" <?php } ?>><a href="notifications.php"><i class="ti-bell"></i><span>Notifications</span></a></li>
                             <li <?php if($page == 5) { ?> class="active" <?php } ?>><a href="people.php"><i class="ti-user"></i><span>People</span></a></li>
                             <li <?php if($page == 6) { ?> class="active" <?php } ?>><a href="support.php"><i class="ti-help"></i><span>Support</span></a></li>

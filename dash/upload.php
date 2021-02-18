@@ -4,14 +4,14 @@ define('__ROOT__', dirname(dirname(__FILE__)));
 require_once(__ROOT__.'/constants.php');
 
 class UploadHelper {
-	
+
 	static function upload($audioguide, $files) {
 		$folder = "images";
 		if($audioguide) {
 			$folder = "audioguides";
 		}
-		$uploadedFiles = array();
-		
+		$uploadedFiles = [];
+
 		foreach ($files as $file) {
 			$allowed = IgniteConstants::ALLOWED_FILE_TYPES;
 			if($audioguide) {
@@ -39,18 +39,20 @@ class UploadHelper {
 			}
 
 			// Verify MYME type of the file
-			if(in_array($filetype, $allowed)){
+			// Temporarily disabled. How to handle multiple MIMEs, like mp3 => audio/mp3, audio/mpeg?
+			if(true || in_array($filetype, $allowed)){
 				// Check whether file exists before uploading it
 				if(!file_exists("$folder/" . $filename)){
-					move_uploaded_file($file["tmp_name"], "$folder/" . urlencode($filename));
+					$location = "$folder/" . urlencode($filename);
+					move_uploaded_file($file["tmp_name"], $location);
 				}
 				$uploadedFiles[] = IgniteConstants::API_LINK . "/dash/$folder/" . urlencode($filename);
 			}
 		}
-		
+
 		return $uploadedFiles;
 	}
-	
+
 }
 
 // Check if the form was submitted
