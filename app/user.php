@@ -37,8 +37,9 @@ $action = $_POST['action'];
  * susc(uid, data)					-- set binary suscipe `data` for user `uid`
  * exit(uid) 						-- leave current community
  * cont(uid, subject, message) 		-- send contact message
+ * fast(uid, fasts) 				-- set the fasts of a user
  */
-if($action !== 'geti' && $action !== 'getu' && $action !== 'post' && $action !== 'read' && $action !== 'delp' && $action !== 'word' && $action !== 'susc' && $action !== 'exit' && $action !== 'cont') {
+if($action !== 'geti' && $action !== 'getu' && $action !== 'post' && $action !== 'read' && $action !== 'delp' && $action !== 'word' && $action !== 'susc' && $action !== 'exit' && $action !== 'cont' && $action !== 'fast') {
 	// ERROR 34: INVALID ACTION
 	IgniteHelper::error(34, 'Invalid action');
 	exit;
@@ -483,6 +484,51 @@ if($action === 'cont') {
 	die(json_encode(['success' => $success ? '1':'0']));
 	exit;
 }
+
+if($action === 'fast') {
+
+	$err = 0;
+
+	if(empty($_POST['uid'])) {
+		$err = $err | 2;
+	}
+
+	if(empty($_POST['fasts'])) {
+		$err = $err | 4;
+	}
+
+	$uid = addslashes(htmlspecialchars($_POST['uid']));
+	$fasts = addslashes($_POST['fasts']);
+	$conn = IgniteHelper::db_connect();
+
+	$user = IgniteHelper::getAppUser($conn, $uid);
+
+	if(!$user) {
+		// ERROR 38: NO USER FOUND
+		IgniteHelper::error(38, "No user found");
+		exit;
+	}
+
+	$sql = "UPDATE users SET fasts='$fasts' WHERE uid='$uid'";
+	$result = mysqli_query($conn, $sql);
+
+	$success = $result ? '1':'0';
+	$object = new stdClass();
+	$object->success = $success;
+
+
+	if($err > 0) {
+		// ERROR 2 ERROR 4 ERROR 6: MISSING ARGUMENTS
+		IgniteHelper::error($err, 'Missing arguments.');
+		exit;
+	}
+
+	IgniteHelper::db_close($conn);
+	header('Content-Type: application/json;charset=utf-8');
+	die(json_encode(['success' => $success ? '1':'0']));
+	exit;
+}
+
 
 // ERROR 999: UNKNOWN ERROR
 IgniteHelper::error(999, 'Unknown error');
