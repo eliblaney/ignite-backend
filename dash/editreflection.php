@@ -36,11 +36,11 @@ $showHelp = strcmp($settings[1], "false");
 $conn = IgniteHelper::db_connect();
 
 $user = IgniteHelper::getUser($conn, $_SESSION['id']);
-$user_canedit = IgniteHelper::hasPermission($user->permissions, "edit");
-$user_candelete = IgniteHelper::hasPermission($user->permissions, "delete");
-$user_canassign = IgniteHelper::hasPermission($user->permissions, "assign");
+$user_canedit = IgniteHelper::hasPermission($user, "edit");
+$user_candelete = IgniteHelper::hasPermission($user, "delete");
+$user_canassign = IgniteHelper::hasPermission($user, "assign");
 
-$users = IgniteHelper::getUsers($conn);
+$users = IgniteHelper::getAdminUsers($conn);
 
 $day = htmlspecialchars($_GET['day']);
 $lang = htmlspecialchars($_GET['lang']);
@@ -84,7 +84,6 @@ if(!$d || $d == null) {
 	$error = true;
 	echo('<div class="alert alert-danger" role="alert">Could not load reflection data.</div>');
 }
-
 if(!$error) {
 ?>
 
@@ -195,26 +194,26 @@ require("master2a.php");
 			return "You have unsaved changes on this page. Are you sure you want to leave?";
 		}
 	}
-	
+
 	window.onbeforeunload = unloadPage;
-	
+
 	function setOverride() {
 		override = true;
 	}
-	
-	$("#save").click(function() {		
+
+	$("#save").click(function() {
 		setOverride();
 	});
-	
-	$(".optionbtn").click(function() {		
+
+	$(".optionbtn").click(function() {
 		setOverride();
 	});
-	
+
 	function cancelReflectionEdit() {
 		setOverride();
 		window.location = "reflections.php";
 	}
-	
+
 	<?php if($can_delete && $user_canedit && $user_candelete) { ?>
 	function deleteReflection(dayid) {
 		swal("Delete", "Are you sure you want to delete this reflection variation?", {
@@ -227,7 +226,7 @@ require("master2a.php");
 					request.open('POST', 'reflections.php', true);
 					request.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
 
-					
+
 					request.onreadystatechange = function() {
 						if (this.readyState == 4 && this.status == 200) {
 							setOverride();
@@ -248,17 +247,17 @@ require("master2a.php");
 		});
 	}
 	<?php } ?>
-	
+
 	<?php if($user_canassign) { ?>
 	function assign(dayid) {
 		<?php
 		echo('var users = {');
 		foreach($users as $u) {
 			echo("'$u->id':'$u->firstname $u->lastname',");
-		}					   
+		}
 		echo('}');
 		?>
-		
+
 		swal({
 			title: "Assign Reflection",
 			text: "Choose who you would like to assign this reflection to.",
@@ -276,7 +275,7 @@ require("master2a.php");
 					}
 				}
 				?>
-				
+
 				nobody: {
 					text: 'Nobody',
 					value: '0'
@@ -314,8 +313,8 @@ require("master2a.php");
 		});
 	}
 	<?php } ?>
-	
-	
+
+
 </script>
 <?php
 require("master2b.php");

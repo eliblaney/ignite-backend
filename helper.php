@@ -28,6 +28,43 @@ class IgniteHelper {
 		return mysqli_close($conn);
 	}
 
+	static function getAdminUser($conn, $userid) {
+		$userid = addslashes(htmlspecialchars($userid));
+		$sql = "SELECT * FROM `admin_users` WHERE id='$userid'";
+		$result = mysqli_query($conn, $sql);
+		if (mysqli_num_rows($result) > 0) {
+			// output data of each row
+			if($row = mysqli_fetch_assoc($result)) {
+				// convert JSON columns
+				foreach(['permissions', 'notifications', 'settings'] as $col) {
+					$row[$col] = json_decode($row[$col]);
+				}
+
+				return $row;
+			}
+		}
+		return false;
+	}
+
+	static function getAdminUsers($conn, $qadd = "") {
+		$users = [];
+		$sql = "SELECT * FROM `admin_users` ".$qadd;
+		$result = mysqli_query($conn, $sql);
+		if (mysqli_num_rows($result) > 0) {
+			while($row = mysqli_fetch_assoc($result)) {
+				if(strpos($row['email'], 'testing.com') === false ) {
+					// convert JSON columns
+					foreach(['permissions', 'notifications', 'settings'] as $col) {
+						$row[$col] = json_decode($row[$col]);
+					}
+
+					$users[] = $row;
+				}
+			}
+		}
+		return $users;
+	}
+
 	static function getAppUser($conn, $userid) {
 		$userid = addslashes(htmlspecialchars($userid));
 		$sql = "SELECT * FROM `users` WHERE uid='$userid'";
@@ -37,9 +74,8 @@ class IgniteHelper {
 			if($row = mysqli_fetch_assoc($result)) {
 				return $row;
 			}
-		} else {
-			return false;
 		}
+		return false;
 	}
 
 	static function getActiveUsers($conn) {
@@ -99,16 +135,7 @@ class IgniteHelper {
 	}
 
 	static function getUser($conn, $userid) {
-		$sql = "SELECT * FROM `admin_users` WHERE id='$userid'";
-		$result = mysqli_query($conn, $sql);
-		if (mysqli_num_rows($result) > 0) {
-			// output data of each row
-			if($row = mysqli_fetch_assoc($result)) {
-				return $row;
-			}
-		} else {
-			return false;
-		}
+		return IgniteHelper::getAdminUser($conn, $userid);
 	}
 
 	static function getUserById($conn, $id) {
@@ -118,14 +145,21 @@ class IgniteHelper {
 			if($row = mysqli_fetch_assoc($result)) {
 				return $row;
 			}
-		} else {
-			return false;
 		}
+		return false;
 	}
 
-	static function hasPermission($permissions, $p) {
-		if(isset($permissions->op) && $permissions->op && strcmp($permissions->op, "false")) return true;
-		return (isset($permissions->$p) && $permissions->$p && strcmp($permissions->$p, "false"));
+	static function hasPermission($user, $p) {
+		// Check op
+		if(isset($user['permissions'])
+			&& $user['permissions']->op
+			&& !strcmp($user['permissions']->op, "true")) {
+			return true;
+		}
+		// Check permission
+		return isset($user['permissions'])
+			&& $user['permissions']->$p
+			&& !strcmp($user['permissions']->$p, "true");
 	}
 
 	static function session() {
@@ -176,9 +210,8 @@ class IgniteHelper {
 			while($row = mysqli_fetch_assoc($result)) {
 				return json_decode($row["notifications"]);
 			}
-		} else {
-			return false;
 		}
+		return false;
 	}
 
 	static function getSettings($conn) {
@@ -191,12 +224,11 @@ class IgniteHelper {
 
 		if (mysqli_num_rows($result) > 0) {
 			// output data of each row
-			while($row = mysqli_fetch_assoc($result)) {
+			if($row = mysqli_fetch_assoc($result)) {
 				return json_decode($row["settings"]);
 			}
-		} else {
-			return false;
 		}
+		return false;
 	}
 
 	static function setSetting($conn, $setting_num, $value) {
@@ -249,9 +281,8 @@ class IgniteHelper {
 			if($row = mysqli_fetch_assoc($result)) {
 				return json_decode('{"id":"'. $row['id'] .'","day":"'. $day .'","content":"'. str_replace(array("\r\n", "\n"), '\\n', $row['content']) .'", "image":"'.$row['image'].'"}');
 			}
-		} else {
-			return false;
 		}
+		return false;
 	}
 
 	static function getDayById($conn, $id) {
@@ -261,9 +292,8 @@ class IgniteHelper {
 			if($row = mysqli_fetch_assoc($result)) {
 				return $row['day'];
 			}
-		} else {
-			return false;
 		}
+		return false;
 	}
 
 	static function setDay($conn, $day, $lang, $religion, $flags, $content) {
@@ -320,9 +350,8 @@ class IgniteHelper {
 			if($row = mysqli_fetch_assoc($result)) {
 				return $row['audio'];
 			}
-		} else {
-			return false;
 		}
+		return false;
 	}
 
 	static function getData($conn, $key) {
@@ -332,9 +361,8 @@ class IgniteHelper {
 			if($row = mysqli_fetch_assoc($result)) {
 				return json_decode($row['data']);
 			}
-		} else {
-			return false;
 		}
+		return false;
 	}
 
 	static function setData($conn, $key, $data) {
@@ -378,9 +406,8 @@ class IgniteHelper {
 				array_push($activity, json_decode('{"userid":"'. $row['userid'] .'","timestamp":"'. $row['timestamp'] .'","bg":"'. json_decode($row['classes'])->bg .'","icon":"'.json_decode($row['classes'])->icon . '","subject":"' . $row['subject'] . '","action":"' . $row['action'] .'"}'));
 			}
 			return $activity;
-		} else {
-			return false;
 		}
+		return false;
 	}
 
 	static function prettyDate($date) {
