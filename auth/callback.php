@@ -21,9 +21,9 @@ if(array_key_exists('error', $_REQUEST)) {
 
 if(array_key_exists('code', $_REQUEST)) {
     $exchange = exchangeCode($_REQUEST['code']);
-	
+
 	$jwt = $exchange->access_token;
-	
+
 	$jwtVerifier = (new Okta\JwtVerifier\JwtVerifierBuilder())
 		->setDiscovery(new Okta\JwtVerifier\Discovery\Oauth())
 		->setAdaptor(new Okta\JwtVerifier\Adaptors\FirebasePhpJwt())
@@ -31,36 +31,36 @@ if(array_key_exists('code', $_REQUEST)) {
 		->setClientId(IgniteConstants::OKTA_CLIENT_ID)
 		->setIssuer(IgniteConstants::OKTA_ISSUER)
 		->build();
-	
+
 	try {
 		$jwt = $jwtVerifier->verify($jwt);
 	} catch(Exception $e){
 		// ERROR 10: COULD NOT VERIFY JSON WEB KEY (JWT)
 		IgniteHelper::error(10, $e->getMessage());
 	}
-	
+
 	$jwt_json = $jwt->toJson();
-	
+
 	if(strcmp($jwt_json->iss, IgniteConstants::OKTA_ISSUER) || strcmp($jwt_json->aud, IgniteConstants::OKTA_AUDIENCE) || strcmp($jwt_json->cid, IgniteConstants::OKTA_CLIENT_ID)) {
 		// ERROR 10: COULD NOT VERIFY JSON WEB KEY (JWT)
 		IgniteHelper::error(10, "Could not verify.");
 	}
-	
+
 	$milliseconds = round(microtime(true) * 1000);
 	if($millseconds > $jwt->getExpirationTime(false)) {
 		// ERROR 11: TOKEN HAS EXPIRED
 		IgniteHelper::error(11, "Token has expired.");
 	}
-	
+
 	// JWT verification successful, now verify user with database
-	
+
 	$email = $jwt_json->sub;
-	
+
 	$conn = IgniteHelper::db_connect();
 	if(!$conn) {
 		IgniteHelper::error(12, "MySQL Error: " . mysqli_connect_error());
 	}
-	
+
 	$userFound = false;
 	$authorized = false;
 	$id = -1;
@@ -76,7 +76,7 @@ if(array_key_exists('code', $_REQUEST)) {
 			if(!strcmp($row["email"], $email)) {
 				$userFound = true;
 				$permissions = json_decode($row["permissions"]);
-				$authorized = IgniteHelper::hasPermission($permissions, "login");
+				$authorized = IgniteHelper::hasPermission(["permissions" => $permissions], "login");
 				if($authorized) {
 					$id = $row["id"];
 					$firstname = $row["firstname"];
@@ -91,17 +91,17 @@ if(array_key_exists('code', $_REQUEST)) {
 	}
 
 	IgniteHelper::db_close($conn);
-	
+
 	if(!$userFound) {
 		// ERROR 13: NO USER FOUND
 		IgniteHelper::error(13, "No user found.");
 	}
-	
+
 	if(!$authorized) {
 		// ERROR 14: USER NOT AUTHORIZED
-		IgniteHelper::error(14, "User is not authorized to perform that function.");
+		IgniteHelper::error(14, "User account is disabled.");
 	}
-	
+
 	$_SESSION['CREATED'] = time();
 	$_SESSION['LAST_ACTIVITY'] = time();
 	$_SESSION['login'] = true;
@@ -110,7 +110,7 @@ if(array_key_exists('code', $_REQUEST)) {
 	$_SESSION['firstname'] = htmlspecialchars($firstname);
 	$_SESSION['lastname'] = htmlspecialchars($lastname);
 	$_SESSION['avatar'] = htmlspecialchars($avatar);
-	
+
 	header('Location: ../dash/');
 }
 

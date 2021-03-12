@@ -17,8 +17,8 @@ require('master1b.php');
 $conn = IgniteHelper::db_connect();
 
 $user = IgniteHelper::getUser($conn, $_SESSION['id']);
-$user_canedit = IgniteHelper::hasPermission($user->permissions, "edit");
-$user_candelete = IgniteHelper::hasPermission($user->permissions, "delete");
+$user_canedit = IgniteHelper::hasPermission($user, "edit");
+$user_candelete = IgniteHelper::hasPermission($user, "delete");
 
 $users = IgniteHelper::getUsers($conn);
 

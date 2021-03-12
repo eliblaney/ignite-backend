@@ -8,15 +8,15 @@ require("master1.php");
 
 if(isset($_POST['delete_reflection']) && strcmp($_POST['delete_reflection'], "false") && isset($_POST['id'])) {
 	$conn = IgniteHelper::db_connect();
-	
+
 	$id = addslashes(htmlspecialchars($_POST['id']));
-	
+
 	$_day = IgniteHelper::getDayById($conn, $id);
 	IgniteHelper::logActivity($conn, "bg4", "trash", "$fullname deleted a Day $_day variation.", "");
-	
+
 	$sql = "DELETE FROM days WHERE id='$id'";
 	mysqli_query($conn, $sql);
-	
+
 	IgniteHelper::db_close($conn);
 }
 
@@ -24,15 +24,14 @@ if(isset($_POST['assign_reflection']) && strcmp($_POST['assign_reflection'], "fa
 	$dayid = addslashes(htmlspecialchars($_POST['dayid']));
 	$user = addslashes(htmlspecialchars($_POST['user']));
 	$conn = IgniteHelper::db_connect();
-	
+
 	$assignments = IgniteHelper::getData($conn, "assignments");
 	$assignments->$dayid = $user;
-	$assignments;
 	IgniteHelper::setData($conn, "assignments", $assignments);
-	
+
 	if(strcmp($user, "0")) { // if the reflection is not being unassigned (i.e. being actually assigned to somebody)
 		IgniteHelper::sendNotification($conn, $user, "New Assignment: Day $dayid", "reflections.php", "ti-flag btn-warning");
-		
+
 		$_day = IgniteHelper::getDayById($conn, $dayid);
 		$_user = IgniteHelper::getUserById($conn, $user);
 		$_user_fullname = $_user->firstname .' '. $_user->lastname;
@@ -41,7 +40,7 @@ if(isset($_POST['assign_reflection']) && strcmp($_POST['assign_reflection'], "fa
 		$_day = IgniteHelper::getDayById($conn, $dayid);
 		IgniteHelper::logActivity($conn, "bg3", "flag", "$fullname unassigned Day $_day.", "");
 	}
-	
+
 	IgniteHelper::db_close($conn);
 }
 
@@ -51,12 +50,12 @@ if(isset($_POST['save'])) {
 	$faith = addslashes(htmlspecialchars($_POST['faith']));
 	$flags = addslashes(htmlspecialchars($_POST['flags']));
 	$content = addslashes(htmlspecialchars($_POST['text']));
-	
+
 	$conn = IgniteHelper::db_connect();
 	if(IgniteHelper::setDay($conn, $day, $lang, $faith, $flags, $content)) {
 		echo('<script type="text/javascript">var save = '. $day .';</script>');
 	}
-	
+
 	IgniteHelper::db_close($conn);
 }
 
@@ -74,7 +73,7 @@ for($i = 1; $i <= 6; $i++) {
 	<div style="margin: 5px auto;" class="col-5 col-xl-1">
 		<a href="editreflection.php?day=<?php echo($day); ?>&lang=en&faith=0&flags=0">
 			<div class="day-box text-center">
-				<div class="day-box-inner">	
+				<div class="day-box-inner">
 					<?php echo($day); ?>
 				</div>
 			</div>

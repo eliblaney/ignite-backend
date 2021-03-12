@@ -67,8 +67,8 @@ if($assigned) {
 		$assigned = false;
 	} else {
 		foreach($users as $u) {
-			if(!strcmp($assigned, $u->id)) {
-				$assigned = $u->firstname .' '. $u->lastname;
+			if(!strcmp($assigned, $u['id'])) {
+				$assigned = $u['firstname'] .' '. $u['lastname'];
 				break;
 			}
 		}
@@ -253,7 +253,7 @@ require("master2a.php");
 		<?php
 		echo('var users = {');
 		foreach($users as $u) {
-			echo("'$u->id':'$u->firstname $u->lastname',");
+			echo("'" . $u['id']. "':'".$u['firstname']." ".$u['lastname']."',");
 		}
 		echo('}');
 		?>
@@ -269,8 +269,8 @@ require("master2a.php");
 						$superuser = false;
 						continue;
 					}
-					if(IgniteHelper::hasPermission($u->permissions, "edit")) {
-						echo("user". uniqid() . htmlspecialchars($u->firstname . $u->lastname) .':{"text":"'. htmlspecialchars($u->firstname) .' '. htmlspecialchars($u->lastname) .'","value":"'. htmlspecialchars($u->id) .'"},
+					if(IgniteHelper::hasPermission($u, "edit")) {
+						echo("user". uniqid() . htmlspecialchars($u['firstname'] . $u['lastname']) .':{"text":"'. htmlspecialchars($u['firstname']) .' '. htmlspecialchars($u['lastname']) .'","value":"'. htmlspecialchars($u['id']) .'"},
 ');
 					}
 				}
