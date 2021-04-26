@@ -49,7 +49,7 @@ $faith = htmlspecialchars($_POST["faith"]);
 $createdAt = htmlspecialchars($_POST["createdAt"]);
 
 $conn = IgniteHelper::db_connect();
-$sql = "INSERT INTO users (uid, email, name, faith, createdAt, startedAt, fasts) VALUES ('$uid', '$email', '$name', '$faith', '$createdAt', '2021-02-17', NULL)";
+$sql = "INSERT INTO users (uid, email, name, faith, createdAt, startedAt, fasts) VALUES ('$uid', '$email', '$name', '$faith', '$createdAt', NULL, NULL)";
 if(!mysqli_query($conn, $sql)) {
 	// ERROR 33: FAILED TO REGISTER USER
 	IgniteHelper::db_close($conn);
